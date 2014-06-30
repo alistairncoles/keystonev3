@@ -713,6 +713,23 @@ def setup_test_env(config):
     _user_role_list(ks, user1, user1_id, project1, proj1_id)
     _user_role_list(ks, user2, user2_id, project2, proj2_id)
 
+def setup_func_test_env(config):
+    role = 'admin'
+    test_domain = 'test-domain'
+    user1 = 'tester4'
+    project1 = 'test4'
+    password = 'testing4'
+
+    ks = _get_keystone_client(config)
+
+    dom_id = _setup_domain(ks, test_domain)
+    role_id = _setup_role(ks, role)
+    user1_id = _setup_user(ks, user1, dom_id, password)
+    proj1_id = _setup_project(ks, project1, dom_id)
+    ks.roles.grant(role_id, user=user1_id, project=proj1_id)
+
+    _user_role_list(ks, user1, user1_id, project1, proj1_id)
+
 
 class ParserFactory(object):
     def __init__(self):
@@ -839,6 +856,7 @@ def _create_arg_parser():
                                 project_domain_args, domain_args])
     parser.add_parser('setup-test-env', setup_test_env,
                       required=[domain_args])
+    parser.add_parser('setup-func-test-env', setup_func_test_env)
 
     return parser.parse_args()
 
@@ -857,21 +875,19 @@ def _set_log_level(verbosity):
 
 
 def main():
-    if len(sys.argv) == 2 and sys.argv[1] == 'just_do_it':
-        setup_test_env()
-
     args = _create_arg_parser()
     # set initial log level here
     _set_log_level(args.verbosity)
 
     try:
+        # load optional config file
         config_file = args.configFile
         if (config_file == None):
             home = os.path.expanduser("~")
             if os.path.exists("default_client.conf"):
                 config_file = "default_client.conf"
-            elif os.path.exists("%s/hyper_client.conf_XXX" % home):
-                config_file = "%s/hyper_client.conf_XXX" % home
+            elif os.path.exists("%s/keystonev3.conf" % home):
+                config_file = "%s/keystonev3.conf" % home
         config = KeystoneConfig(config_file, vars(args))
     except IOError:
         print("Failed to load config")
